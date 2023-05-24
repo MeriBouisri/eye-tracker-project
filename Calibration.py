@@ -17,30 +17,32 @@ canvas.pack(fill=tk.BOTH, expand=True)
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 point_size = min(screen_width, screen_height) // 30
+point_size2 = point_size // 2
 
 points = []
+points2 = []
 point_index = 0 
-
+all_points = []
 
 
 pointscoords = [
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point1
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point2
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point3
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point4
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point5
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point6
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point7
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point8
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point9
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point10
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point11
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []},  # point12
-    {'rx': [], 'ry': [], 'lx': [], 'ly': []}   # point13
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point1
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point2
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point3
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point4
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point5
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point6
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point7
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point8
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point9
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point10
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point11
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []},  # point12
+    {'rx': [], 'ry': [], 'lx': [], 'ly': [], 'px': [], 'py': []}   # point13
 ]
 
 def get_iris_coords(point_index):
-
+    global all_points
     cam = cv2.VideoCapture(0)
     face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
     screen_w, screen_h = pyautogui.size()
@@ -110,6 +112,10 @@ def get_iris_coords(point_index):
             current_point['lx'].append(lefteye_coords[0])
             current_point['ly'].append(lefteye_coords[1])
 
+            point_x, point_y = all_points[point_index]
+            current_point['px'].append(point_x)
+            current_point['py'].append(point_y)
+
     cam.release()
     cv2.destroyAllWindows()
 
@@ -119,8 +125,12 @@ def calculate_average():
         ry_mean = np.mean(point_data['ry'])
         lx_mean = np.mean(point_data['lx'])
         ly_mean = np.mean(point_data['ly'])
-        print(f'Point {i+1} - rx_mean: {rx_mean}, ry_mean: {ry_mean}, lx_mean: {lx_mean}, ly_mean: {ly_mean}')
+        px = np.mean(point_data['px'])
+        py = np.mean(point_data['py'])
+        print(f'Point {i+1} - rx_mean: {rx_mean}, ry_mean: {ry_mean}, lx_mean: {lx_mean}, ly_mean: {ly_mean}', end=' ')
+        print(f'// Coordonnées (x, y) du point {i+1} : ({px}, {py})')
     root.config(cursor='arrow')
+    return all_points,pointscoords
 
 
 
@@ -129,6 +139,7 @@ def showpoint():
 
     # Create calibration points
     points = []
+    points2 = []
     point_index = 0
 
     # Add points in each corner
@@ -180,28 +191,37 @@ def showpoint():
             x + point_size, y + point_size,
             fill='white'
         )
-        points.append(point)
 
-    return points, point_index
+        point2 = canvas.create_oval(
+            x - point_size2, y - point_size2,
+            x + point_size2, y + point_size2,
+            fill='white'
+        )
+        points.append(point)
+        points2.append(point2)
+
+    return points, point_index,all_points, points2
 
 def update_point_color():
     global points
+    global points2
     global point_index
     # Check if all points are calibrated
     if point_index >= len(points):
         root.after(2000, root.destroy)  # Close the window after 2 seconds
-        calculate_average()  # Calculate the averages
-        return
+        all_points,pointscoords = calculate_average()  # Calculate the averages
 
     if point_index > 0:
         canvas.itemconfig(points[point_index - 1], fill='white')
+        canvas.itemconfig(points2[point_index - 1], fill='white')
+    if point_index < 13:
+        # Set current point color to green
+        canvas.itemconfig(points[point_index], fill='green')
+        canvas.itemconfig(points2[point_index], fill='red')
 
-    # Set current point color to green
-    canvas.itemconfig(points[point_index], fill='green')
+        get_iris_coords(point_index)
 
-    get_iris_coords(point_index)
-
-    point_index += 1
+        point_index += 1
 
     # Schedule the next point color update after 2 seconds (adjust as needed)
     root.after(1000, update_point_color)
@@ -209,15 +229,19 @@ def update_point_color():
 # Function to remove the text
 def setuptext():
     global points
+    global points2
     global point_index
+    global all_points
     canvas.delete(text)
-    points, point_index = showpoint()
+    points, point_index,all_points, points2 = showpoint()
+    all_points = all_points
     root.after(2000, start_calibration)
     
 
 #start updating point color
 def start_calibration():
     global points
+    global points2
     global point_index
     update_point_color()
 
@@ -225,7 +249,7 @@ def start_calibration():
 # Add instructions in the center
 text = canvas.create_text(
     screen_width // 2, screen_height // 2,
-    text='La calibration va commencer\n        Fixez le point vert !', fill='white', font=('Arial', 24)
+    text='La calibration va commencer\n        Fixez le point rouge !', fill='white', font=('Arial', 24)
 )
 
 # After 5 seconds, remove the text and start updating point color
