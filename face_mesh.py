@@ -68,15 +68,27 @@ class FaceMesh():
     
     def map_landmarks_to_frame(self, indices=[]):
         """
-        
+        Return a list of the (x, y) coordinates of the face mesh landmarks at the given indices.
+        The coordinates are scaled to the frame's dimensions. 
+        If no indices are given, all landmarks are mapped and returned by default.
         """
+        # In the case of passing a single index as an argument, convert it to a list
+        if not np.iterable(indices): indices = [indices]
 
-        if len(indices) == 0: indices = range(len(self.landmark_points[0].landmark))
-        callables = [lambda x: x * self.frame_w, lambda x: x * self.frame_h]
-        landmarks = [self.get_landmark(index) for index in indices] 
-        return  math_utils.map_by_column(landmarks, callables)
+        # If no indices are given, map all landmarks
+        elif len(indices) == 0: 
+            indices = range(len(self.landmark_points[0].landmark))
 
+        # Get a list of the coordinates at the given landmark indices
+        landmark_list = [self.get_landmark(index) for index in indices] 
 
+        # Scale the coordinates to the frame's dimensions
+        mapped_landmarks = [(landmark[0] * self.frame_w, 
+                             landmark[1] * self.frame_h) 
+                             for landmark in landmark_list]
+
+        return mapped_landmarks
+    
 
 # ------------------------------
 # EXAMPLE USAGE
@@ -93,19 +105,15 @@ if __name__ == '__main__':
 
         try:
             mesh.apply_face_mesh()
-            f = np.array(Landmark.OUTER_EYE_CORNER_LANDMARKS).flatten()
-            flat = np.array(Landmark.IRIS_LANDMARKS).flatten()
 
-            flat = np.concatenate((f, flat))
-
-            draw_utils.draw_convex_hull(frame, mesh.map_landmarks_to_frame())
-
-
+            mapped_landmarks = mesh.map_landmarks_to_frame(Landmark.IRIS_LANDMARKS[Landmark.LEFT])
+            draw_utils.draw_points(frame, mapped_landmarks)
 
         except FaceNotFound:
             pass
 
         cv2.imshow('Frame', frame)
+
         if cv2.waitKey(1) == ord('q'):
             break
 
