@@ -5,25 +5,30 @@ import math_utils
 
 DEFAULT_COLOR = (0, 0, 255)
 DEFAULT_THICKNESS = 1
+DEFAULT_LENGTH = 2
 
 
-def draw_cross(frame, point, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS, length=2):
+def draw_cross(frame, point, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS, length=DEFAULT_LENGTH):
     """
-    Draw a cross on the frame at the given point.
+    Draw a cross on the frame at the given point. A correctly formatted point is subscriptable object
+    who's first two elements are the x and y coordinates of the point, respectively. If incorrectly formatted,
+    the point is converted to a flattened numpy array, and the first two elements are used as the coordinates.
     """
+    # Convert the point to a usable format
+    point = np.array(point).flatten()
     x, y, size = int(point[0]), int(point[1]), int(length / 2)
     cv2.line(frame, (x - size, y), (x + size, y), color, thickness)
     cv2.line(frame, (x, y - size), (x, y + size), color, thickness)
 
 
-def draw_points(frame, points, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS, length=2):
+def draw_points(frame, points, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS, length=DEFAULT_LENGTH):
     """
     Draw a cross on the frame at each point in the points list.
     """
     for point in points:
         draw_cross(frame, point, color=color, thickness=thickness, length=length)
 
-def draw_line(frame, point1, point2, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS):
+def draw_line(frame, point1, point2, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS, length=DEFAULT_LENGTH):
     """
     Draw a line on the frame joining the two points.
     Helper function for not forgetting to convert the coordinates to integers.
@@ -74,10 +79,6 @@ def draw_convex_hull(frame, vertices, closed=True, color=DEFAULT_COLOR, thicknes
     sorted_vertices = math_utils.get_convex_hull(vertices)
     draw_polygon(frame, sorted_vertices, closed=closed, color=color, thickness=thickness)
 
-
-
-
-
 def draw_min_enclosing_rectangle(frame, vertices, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS):
     """
     Draw a rectangle on the frame that encloses the given vertices.
@@ -97,26 +98,22 @@ def draw_min_enclosing_rectangle(frame, vertices, color=DEFAULT_COLOR, thickness
     return (x_min, y_min), (x_max, y_max)
     
 # ------------------------------
-# EXAMPLE 
+# EXAMPLE USAGE
 # ------------------------------
 if __name__ == '__main__':
 
-    
     frame = np.zeros((500, 500, 3), dtype=np.uint8)
 
-    # random points
     vertices = []
-
     for i in range(100):
         x = np.random.randint(0, 500)
         y = np.random.randint(0, 500)
 
         vertices.append((x, y))
 
-    draw_points(frame, vertices, length=5)
-
+    draw_points(frame, vertices, color=(255,0,0), length=5)
     draw_convex_hull(frame, vertices, color=(0, 255, 0))
-
+    draw_polygon(frame, vertices, color=(0, 0, 255))
 
     while True:
         cv2.imshow('frame', frame)
