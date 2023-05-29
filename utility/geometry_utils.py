@@ -6,11 +6,8 @@ def calculate_slope(point1, point2):
     Calculates the slope of line intersecting the two points.
     Returns math.inf if the line is vertical (division by zero)
     """
-
     if (point2[0] - point1[0]) == 0: return math.inf
     return (point2[1] - point1[1]) / (point2[0] - point1[0])
-
-
 
 def calculate_intercept(slope, point):
     """
@@ -21,7 +18,8 @@ def calculate_intercept(slope, point):
 
 def get_linear_equation(point1, point2):
     """
-    Returns a callable that represents the linear equation of the line intersecting the two points.
+    Returns a callable that represents the linear equation of the line intersecting the two points,
+    in the form y = mx + b .
     """
     slope = calculate_slope(point1, point2)
     intercept = calculate_intercept(slope, point1)
@@ -29,6 +27,9 @@ def get_linear_equation(point1, point2):
     return lambda x: slope * x + intercept
 
 def get_non_intersecting_vertices(vertices):
+    """
+    Sort the vertices in the given list in such a way that the segments formed by joining the vertices do not intersect.
+    """
     # Sort the vertices by their x coordinate in ascending order
     sorted_vertices = sorted(vertices, key=lambda x: x[0])
 
@@ -52,7 +53,8 @@ def get_non_intersecting_vertices(vertices):
 
 def get_convex_hull(vertices):
     """
-    Compute the convex hull of the given vertices using the Graham Scan algorithm.
+    Sort the vertices in the given list in such a way that the segments formed by joining the vertices form a convex polygon.
+    The convex hull is computed using the Graham Scan algorithm.
     """
     convex_hull = []
     sorted_vertices = sorted(vertices, key=lambda x: [x[0], x[1]])
@@ -64,13 +66,19 @@ def get_convex_hull(vertices):
 
     for vertex in sorted_vertices:
         convex_hull.append(vertex)
-
-
         while len(convex_hull) > 2 and get_cross_product(convex_hull[-3], convex_hull[-2], convex_hull[-1]) < 0:
             convex_hull.pop(-2)
  
     return convex_hull
 
+def get_min_enclosing_rectangle(vertices, dtype=int):
+    x_min = dtype(min(vertices, key=lambda x: x[0])[0])
+    x_max = dtype(max(vertices, key=lambda x: x[0])[0])
+
+    y_min = dtype(min(vertices, key=lambda y: y[1])[1])
+    y_max = dtype(max(vertices, key=lambda y: y[1])[1])
+
+    return (x_min, y_min), (x_max, y_max)
 
 def calculate_angle_degrees(point1, point2):
     """
@@ -100,22 +108,3 @@ def as_geometric_vector(initial_point, terminal_point):
     Returns a tuple containing the vector's magnitude and angle with respect to the horizontal axis.
     """
     return calculate_magnitude(initial_point, terminal_point), calculate_angle_degrees(initial_point, terminal_point)
-
-
-
-def map_by_column(list, callables):
-    """
-    Maps the given list by the given callables. The callable of index n is applied to nth element of each column of the list.
-    Example :
-    list = [[1,2,3], [4,5,6], [7,8,9]]
-    callables = [lambda x: x * 1, lambda x: x * 0, lambda x: x * 1]
-    map_by_column(list, callables)
-    >> [[1,0,3], [4,0,6], [7,0,9]]
-    """
-    flat_array = np.array(list).flatten()
-
-    mapping_function = lambda i: callables[i % len(callables)](flat_array[i])
-
-    flat_array = np.array([mapping_function(i) for i in range(len(flat_array))])
-
-    return flat_array.reshape(-1, len(list[0]))
