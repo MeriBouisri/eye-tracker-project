@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+import math_utils
+
 DEFAULT_COLOR = (0, 0, 255)
 DEFAULT_THICKNESS = 1
 DEFAULT_LENGTH = 2
@@ -115,7 +117,6 @@ if __name__ == '__main__':
 
     draw_points(frame, vertices, color=(255,0,0), length=5)
     draw_convex_hull(frame, vertices, color=(0, 255, 0))
-    #draw_polygon(frame, vertices, color=(0, 0, 255))
 
     while True:
         cv2.imshow('frame', frame)
