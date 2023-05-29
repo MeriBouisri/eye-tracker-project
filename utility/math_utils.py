@@ -1,6 +1,5 @@
 import numpy as np
 import math
-import draw_utils
 
 def calculate_slope(point1, point2):
     """
@@ -52,24 +51,25 @@ def get_non_intersecting_vertices(vertices):
     return points_above_line + points_below_line 
 
 def get_convex_hull(vertices):
+    """
+    Compute the convex hull of the given vertices using the Graham Scan algorithm.
+    """
     convex_hull = []
     sorted_vertices = sorted(vertices, key=lambda x: [x[0], x[1]])
-    
+
     start = sorted_vertices.pop(0)
     convex_hull.append(start)
+
     sorted_vertices = sorted(sorted_vertices, key=lambda p: (calculate_slope(start, p), -p[1], p[0]))
 
     for vertex in sorted_vertices:
         convex_hull.append(vertex)
+
+
         while len(convex_hull) > 2 and get_cross_product(convex_hull[-3], convex_hull[-2], convex_hull[-1]) < 0:
             convex_hull.pop(-2)
  
     return convex_hull
-
-
-
-    
-
 
 
 def calculate_angle_degrees(point1, point2):
@@ -112,11 +112,10 @@ def map_by_column(list, callables):
     map_by_column(list, callables)
     >> [[1,0,3], [4,0,6], [7,0,9]]
     """
-    
     flat_array = np.array(list).flatten()
+
     mapping_function = lambda i: callables[i % len(callables)](flat_array[i])
+
     flat_array = np.array([mapping_function(i) for i in range(len(flat_array))])
+
     return flat_array.reshape(-1, len(list[0]))
-
-
-

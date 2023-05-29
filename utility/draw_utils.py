@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
 
-import math_utils
-
 DEFAULT_COLOR = (0, 0, 255)
 DEFAULT_THICKNESS = 1
 DEFAULT_LENGTH = 2
@@ -16,6 +14,7 @@ def draw_cross(frame, point, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS, l
     """
     # Convert the point to a usable format
     point = np.array(point).flatten()
+
     x, y, size = int(point[0]), int(point[1]), int(length / 2)
     cv2.line(frame, (x - size, y), (x + size, y), color, thickness)
     cv2.line(frame, (x, y - size), (x, y + size), color, thickness)
@@ -40,6 +39,7 @@ def draw_line(frame, point1, point2, color=DEFAULT_COLOR, thickness=DEFAULT_THIC
 def draw_equation_line(frame, domain_range, linear_equation: callable, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS):
     """
     Draw a line on the frame according to the given linear equation, and within the domain range of the equation.
+    Returns the coordinates of the two points at the extremities of the line.
 
     @param frame: The image on which to draw the line
     @param domain_range: A tuple containing the domain of the function
@@ -50,6 +50,8 @@ def draw_equation_line(frame, domain_range, linear_equation: callable, color=DEF
     point2 = domain_range[1], linear_equation(domain_range[1])
 
     draw_line(frame, point1, point2, color, thickness)
+
+    return point1, point2
 
 
 def draw_joined_segments(frame, points, closed=True, color=DEFAULT_COLOR, width=2, thickness=DEFAULT_THICKNESS):
@@ -113,7 +115,7 @@ if __name__ == '__main__':
 
     draw_points(frame, vertices, color=(255,0,0), length=5)
     draw_convex_hull(frame, vertices, color=(0, 255, 0))
-    draw_polygon(frame, vertices, color=(0, 0, 255))
+    #draw_polygon(frame, vertices, color=(0, 0, 255))
 
     while True:
         cv2.imshow('frame', frame)
