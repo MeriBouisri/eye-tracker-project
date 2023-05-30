@@ -4,29 +4,8 @@ import cv2
 
 from utility.draw_utils import *
 
-
-
 class FaceNotFound(Exception):
     pass
-
-class Landmark():
-    """
-    Refer to the following link for the landmark indices: https://i.stack.imgur.com/T1ypF.jpg
-    """
-
-    # TODO: Organize landmark constants better. Dictionary maybe
-    LEFT = 0
-    RIGHT = 1
-
-    PUPIL_LANDMARK = [468, 473]
-    OUTER_EYE_CORNER_LANDMARK = [33, 263]
-
-    LOWER_CENTER_NOSE_RIDGE_LANDMARK = 197
-    MIDDLE_CENTER_NOSE_RIDGE_LANDMARK = 168
-    UPPER_CENTER_NOSE_RIDGE_LANDMARK = 8
-
-    IRIS_LANDMARKS = [[474, 475,476, 477], 
-                      [469, 470, 471, 472]]
 
 class FaceMesh():
     """
@@ -47,11 +26,12 @@ class FaceMesh():
     """
 
     face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
-    
+
     KEYPOINT_COUNT = 478
 
     def __init__(self):
         pass
+        
     
 
     def update_frame(self, frame):
@@ -81,7 +61,8 @@ class FaceMesh():
         output = self.face_mesh.process(rgb_frame)
         self.landmark_points = output.multi_face_landmarks
 
-        if not self.landmark_points: raise FaceNotFound()
+        if not self.landmark_points:
+            raise FaceNotFound('Face not found in frame')
 
 
     def get_normalized_landmarks(self, keypoints=range(KEYPOINT_COUNT), keep_dimensions=False):
@@ -123,6 +104,7 @@ class FaceMesh():
         array([[[0.5, 0.5], [0.5, 0.5]],
                 [[0.5, 0.5], [0.5, 0.5]]])
         """
+
         landmarks = self.landmark_points[0].landmark
         keypoints = np.array(keypoints)
         original_shape = 0
@@ -137,7 +119,7 @@ class FaceMesh():
         coordinates = np.array([[landmark.x, landmark.y] for landmark in normalized_landmarks])
         
         # Return the array to its original shape if necessary 
-        if keep_dimensions:
+        if keep_dimensions and keypoints.ndim > 1:
             return coordinates.reshape(original_shape + (2,))
         
         return coordinates
@@ -154,17 +136,23 @@ class FaceMesh():
         keypoints : array_like, optional
             The keypoints at which to map the landmarks. The default is to map all the landmarks in the face mesh.
         
-        keep_dimensions : bool, optional
-            If True, the landmark coordinates will be in the
-        
-        
+        keep_dimensions: bool, optional
+            If True, the tuple of coordinates will be indexed according to the original position of the corresponding keypoint from the input array,
+            such as output_array.ndim() == input_array.ndim() + 1.
+            If False, the tuple of coordinates will be organized in a 2d list. Set to False by default.
+
+        Returns
+        ----------
+        coordinates : ndarray
+            A list of the (x, y) coordinates of the face mesh landmarks at the given keypoints, scaled to the frame's dimensions.
         """
         normalized_landmarks = self.get_normalized_landmarks(keypoints, keep_dimensions)
         frame_dimensions = np.array([self.frame_w, self.frame_h])
+
         return normalized_landmarks * frame_dimensions
     
 
-    def mean_landmark_coordinates(self, keypoints, axis=None):
+    def mean_landmark_coordinates(self, keypoints, axis=0):
         """
         Compute the average point of the landmark coordinates at the given keypoints. The coordinates are mapped to the frame's dimensions before the mean is calculated.
 
@@ -174,7 +162,7 @@ class FaceMesh():
             The face_mesh keypoints at which to calculate the mean. 
 
         axis : int, optional
-            The axis along which the mean is calculated. The default is to compute the mean of the flattened array. 
+            The axis along which the mean is calculated. The default is to compute the mean of the flattened array (axis = 0)
 
         Returns
         ----------
@@ -192,16 +180,33 @@ if __name__ == '__main__':
     cam = cv2.VideoCapture(0)
     mesh = FaceMesh()
 
+    PUPIL_LANDMARKS = [468, 473]
+    OUTER_EYE_CORNER_LANDMARKS = [33, 263]
+
+    IRIS_LANDMARKS = [[474, 475,476, 477], 
+                      [469, 470, 471, 472]]
+    
+    NOSE_LANDMARKS = [197, 8]
+
     while True:
         _, frame = cam.read()
         frame = cv2.flip(frame, 1)
-        mesh.update_frame(frame)
+        mesh.update_frame(frame)    
 
         try:
             mesh.apply_face_mesh()
 
-            denormalized_landmarks = mesh.map_landmarks_to_frame(Landmark.PUPIL_LANDMARK)
-            draw_all_crosses(frame, denormalized_landmarks, color=(0, 255, 0))
+            face_landmarks = mesh.map_landmarks_to_frame()
+            draw_min_enclosing_rectangle(frame, face_landmarks)
+
+            pupil_landmarks = mesh.map_landmarks_to_frame(PUPIL_LANDMARKS)
+            draw_all_crosses(frame, pupil_landmarks, color=(0, 255, 0), length=5)
+
+            eye_area_landmarks = mesh.map_landmarks_to_frame([IRIS_LANDMARKS[0] + IRIS_LANDMARKS[1] + OUTER_EYE_CORNER_LANDMARKS])
+            nose_area_landmarks = mesh.map_landmarks_to_frame(NOSE_LANDMARKS + OUTER_EYE_CORNER_LANDMARKS)
+            
+            draw_convex_hull(frame, eye_area_landmarks)
+            draw_convex_hull(frame, nose_area_landmarks, color=(0,255, 0))
 
         except FaceNotFound:
             pass
