@@ -170,7 +170,7 @@ class FaceMesh():
         mean_landmark = np.mean(landmarks, axis=axis)
 
         if scale_to_frame:
-            mean_landmark * self.frame_dimensions
+            return mean_landmark * self.frame_dimensions
         
         return mean_landmark
 
