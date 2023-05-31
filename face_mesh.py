@@ -24,41 +24,34 @@ class FaceMesh():
     KEYPOINT_COUNT : int = 478
         The number of keypoints in the face mesh provided by the mediapipe library. 
     """
-
-    face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
+    FACE_MESH = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
 
     KEYPOINT_COUNT = 478
 
     def __init__(self):
         pass
-        
-    
 
-    def update_frame(self, frame):
+    def apply_face_mesh(self, frame):
         """
-        Update the frame to be processed.
+        Apply the face mesh to the current frame.
 
         Parameters
         ----------
         frame : ndarray
-            The image to be processed by the face mesh. The image will also be the target for all subsequent methods 
-            of the FaceMesh instance until the next call to update_frame().
-        """
-        self.frame = frame
-        self.frame_h, self.frame_w, _ = self.frame.shape
+            The frame to be processed by the face mesh. All subsequent method calls will be applied to the face mesh detected in this frame,
+            until the next call to this method. The frame's dimensions are 
 
-
-    def apply_face_mesh(self):
-        """
-        Apply the face mesh to the current frame.
-
-        Exceptions
+        Raises
         ----------
-        FaceNotFound : Raised when the face mesh fails to detect any landmarks in the frame. 
-        Surround with try-except block if necessary.
+        FaceNotFound : 
+            Raised when the face mesh fails to detect any landmarks in the frame. 
         """
-        rgb_frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-        output = self.face_mesh.process(rgb_frame)
+
+        # Store as (width, height) for consistency with (x, y) coordinates
+        self.frame_dimensions = np.array([frame.shape[1], frame.shape[0]])
+
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        output = self.FACE_MESH.process(rgb_frame)
         self.landmark_points = output.multi_face_landmarks
 
         if not self.landmark_points:
@@ -72,10 +65,10 @@ class FaceMesh():
 
         Parameters
         ----------
-        keypoints: array_like, optional
+        keypoints: array_like, optional = range(KEYPOINT_COUNT)
             The keypoints at which to retrieve the landmarks. The default is to retrieve all the landmarks in the face mesh.
         
-        keep_dimensions: bool, optional
+        keep_dimensions: bool, optional = False
             If True, the tuple of coordinates will be indexed according to the original position of the corresponding keypoint from the input array,
             such as output_array.ndim() == input_array.ndim() + 1.
             If False, the tuple of coordinates will be organized in a 2d list. Set to False by default.
@@ -106,37 +99,38 @@ class FaceMesh():
         """
 
         landmarks = self.landmark_points[0].landmark
+
         keypoints = np.array(keypoints)
-        original_shape = 0
+        original_shape = keypoints.shape
 
         # Flatten multidimensional array, but keep original shape in memory 
         if keypoints.ndim > 1:
-            original_shape = keypoints.shape
             keypoints = keypoints.flatten()
         
         # Retrieve landmarks at the given keypoints
         normalized_landmarks = np.take(landmarks, keypoints)
-        coordinates = np.array([[landmark.x, landmark.y] for landmark in normalized_landmarks])
+        coordinates = np.array([[landmark.x, landmark.y] 
+                                for landmark in normalized_landmarks])
         
         # Return the array to its original shape if necessary 
-        if keep_dimensions and keypoints.ndim > 1:
+        if keep_dimensions:
             return coordinates.reshape(original_shape + (2,))
         
         return coordinates
     
 
-    def map_landmarks_to_frame(self, keypoints=range(KEYPOINT_COUNT), keep_dimensions=False):
+    def get_scaled_landmarks(self, keypoints=range(KEYPOINT_COUNT), keep_dimensions=False):
         """
         Return a list of the (x, y) coordinates of the face mesh landmarks at the given keypoints.
-        The coordinates of the normalized landmarks are mapped to the frame's dimensions.
+        The coordinates are scaled to this instance's frame dimensions.
         If no keypoints are given, the default behavior is to map and return all the landmarks in the face mesh.
 
         Parameters
         ----------
-        keypoints : array_like, optional
+        keypoints : array_like, optional, default = range(KEYPOINT_COUNT)
             The keypoints at which to map the landmarks. The default is to map all the landmarks in the face mesh.
         
-        keep_dimensions: bool, optional
+        keep_dimensions: bool, optional, default = False
             If True, the tuple of coordinates will be indexed according to the original position of the corresponding keypoint from the input array,
             such as output_array.ndim() == input_array.ndim() + 1.
             If False, the tuple of coordinates will be organized in a 2d list. Set to False by default.
@@ -147,30 +141,38 @@ class FaceMesh():
             A list of the (x, y) coordinates of the face mesh landmarks at the given keypoints, scaled to the frame's dimensions.
         """
         normalized_landmarks = self.get_normalized_landmarks(keypoints, keep_dimensions)
-        frame_dimensions = np.array([self.frame_w, self.frame_h])
-
-        return normalized_landmarks * frame_dimensions
+        return normalized_landmarks * self.frame_dimensions
     
 
-    def mean_landmark_coordinates(self, keypoints, axis=0):
+    def mean_landmark_coordinates(self, keypoints, axis=0, scale_to_frame=False):
         """
-        Compute the average point of the landmark coordinates at the given keypoints. The coordinates are mapped to the frame's dimensions before the mean is calculated.
+        Compute the average point of the landmark coordinates at the given keypoints.
 
         Parameters
         ----------
         keypoints : array_like
             The face_mesh keypoints at which to calculate the mean. 
 
-        axis : int, optional
+        axis : int, optional, default = 0
             The axis along which the mean is calculated. The default is to compute the mean of the flattened array (axis = 0)
+
+        scale_to_frame : bool, optional, default = False
+            If True, the mean coordinates are scaled to the frame's dimensions. If False, the mean of the normalized coordinates is returned.
+            Set to False by default.
 
         Returns
         ----------
         mean : ndarray
             The mean of the face mesh landmarks at the given keypoints, along the specified axis. 
         """
-        mapped_landmarks = self.map_landmarks_to_frame(keypoints, keep_dimensions=True)
-        return np.mean(mapped_landmarks, axis=axis)
+
+        landmarks = self.get_normalized_landmarks(keypoints, keep_dimensions=True)
+        mean_landmark = np.mean(landmarks, axis=axis)
+
+        if scale_to_frame:
+            mean_landmark * self.frame_dimensions
+        
+        return mean_landmark
 
 # ------------------------------
 # EXAMPLE USAGE
@@ -191,22 +193,25 @@ if __name__ == '__main__':
     while True:
         _, frame = cam.read()
         frame = cv2.flip(frame, 1)
-        mesh.update_frame(frame)    
+ 
 
         try:
-            mesh.apply_face_mesh()
+            mesh.apply_face_mesh(frame)
 
-            face_landmarks = mesh.map_landmarks_to_frame()
+            face_landmarks = mesh.get_scaled_landmarks()
             draw_min_enclosing_rectangle(frame, face_landmarks)
 
-            pupil_landmarks = mesh.map_landmarks_to_frame(PUPIL_LANDMARKS)
-            draw_all_crosses(frame, pupil_landmarks, color=(0, 255, 0), length=5)
+            mean = mesh.mean_landmark_coordinates(IRIS_LANDMARKS, axis=1, scale_to_frame=True)
+            norm_mean = mesh.mean_landmark_coordinates(IRIS_LANDMARKS, axis=1)
 
-            eye_area_landmarks = mesh.map_landmarks_to_frame([IRIS_LANDMARKS[0] + IRIS_LANDMARKS[1] + OUTER_EYE_CORNER_LANDMARKS])
-            nose_area_landmarks = mesh.map_landmarks_to_frame(NOSE_LANDMARKS + OUTER_EYE_CORNER_LANDMARKS)
-            
-            draw_convex_hull(frame, eye_area_landmarks)
-            draw_convex_hull(frame, nose_area_landmarks, color=(0,255, 0))
+            m = mesh.get_scaled_landmarks(IRIS_LANDMARKS)
+
+            # a = mesh.mean_landmark_coordinates(IRIS_LANDMARKS, axis=1)
+
+            # draw_cross(frame, mean, length=10)
+            draw_all_crosses(frame, mean, length=10)
+
+        
 
         except FaceNotFound:
             pass
