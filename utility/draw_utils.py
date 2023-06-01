@@ -21,13 +21,13 @@ def draw_cross(frame, point, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS, l
         If not a subscriptable object, an attempt is made to convert it to a flat numpy array.
         The first two elements of the array are used as the coordinates.
     
-    color : tuple, optional
+    color : tuple, optional, default = (0, 0, 255)
         The color of the cross. The default color is (0, 0, 255).
     
-    thickness : int, optional
+    thickness : int, optional, default = 1
         The thickness of the lines that make up the cross. The default thickness is 1 px.
     
-    length : int, optional
+    length : int, optional, default = 2
         The length of the lines that make up the cross. The default length is 2 px.
     """
     # Convert the point to a usable format
@@ -51,13 +51,13 @@ def draw_all_crosses(frame, points, color=DEFAULT_COLOR, thickness=DEFAULT_THICK
         The list of (x, y) coordinates at which to draw the crosses. If only one point is given, 
         the draw_cross() function is called automatically. 
 
-    color : tuple, optional
+    color : tuple, optional, default = (0, 0, 255)
         The color of the cross. The default color is (0, 0, 255).
     
-    thickness : int, optional
+    thickness : int, optional, default = 1
         The thickness of the lines that make up the cross. The default thickness is 1 px.
 
-    length : int, optional
+    length : int, optional, default = 2
         The length of the lines that make up the cross. The default length is 2 px.
 
     See Also
@@ -90,13 +90,13 @@ def draw_line(frame, point1, point2, color=DEFAULT_COLOR, thickness=DEFAULT_THIC
     point2 : Any
         Second point of the line segment
         
-    color : tuple, optional
+    color : tuple, optional, default = (0, 0, 255)
         The color of the line. The default color is (0, 0, 255).
     
-    thickness : int, optional
+    thickness : int, optional, default = 1
         The thickness of the line. The default thickness is 1 px.
     
-    length : int, optional
+    length : int, optional, default = 2
         The length of the line. The default length is 2 px.
     """
     pt1 = (int(point1[0]), int(point1[1]))
@@ -121,10 +121,10 @@ def draw_equation_line(frame, domain_range, linear_equation: callable, color=DEF
     linear_equation : callable
         A function that takes a number as input and returns a number as output.
     
-    color : tuple, optional
+    color : tuple, optional, default = (0, 0, 255)
         The color of the line. The default color is (0, 0, 255).
     
-    thickness : int, optional
+    thickness : int, optional, default = 1
         The thickness of the line. The default thickness is 1 px.
     """
 
@@ -136,25 +136,25 @@ def draw_equation_line(frame, domain_range, linear_equation: callable, color=DEF
     return point1, point2
 
 
-def draw_joined_segments(frame, points, closed=True, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS):
+def draw_joined_segments(frame, vertices, closed=True, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS):
     """
-    Draw a line joining each point in the points list to the next one in the list, with the last point joined to the first one by default.
+    Draw a line joining each vertex in the points list to the next one in the list, with the last point joined to the first one by default.
     
     Parameters
     ----------
     frame : ndarray
         The image on which to draw the line.
     
-    points : array_like
+    vertices : array_like
         The list of (x, y) coordinates connecting each segment.
     
-    closed : bool, optional
+    closed : bool, optional, default = True
         If True, the last point is joined to the first one. Set to True by default.
     
-    color : tuple, optional
+    color : tuple, optional, default = (0, 0, 255)
         The color of the line. The default color is (0, 0, 255).
     
-    thickness : int, optional
+    thickness : int, optional, default = 1
         The thickness of the line. The default thickness is 1 px.
     
     See Also
@@ -164,11 +164,11 @@ def draw_joined_segments(frame, points, closed=True, color=DEFAULT_COLOR, thickn
     draw_convex_hull : Draw non-intersecting segments between the points in the list, such as the segments form a convex polygon.
     """
 
-    for i in range(len(points) - 1):
-        draw_line(frame, points[i], points[i + 1], color, thickness)
+    for i in range(len(vertices) - 1):
+        draw_line(frame, vertices[i], vertices[i + 1], color, thickness)
 
     if closed:
-        draw_line(frame, points[0], points[-1], color, thickness)
+        draw_line(frame, vertices[0], vertices[-1], color, thickness)
 
 
 def draw_polygon(frame, vertices, closed=True,  color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS):
@@ -180,16 +180,16 @@ def draw_polygon(frame, vertices, closed=True,  color=DEFAULT_COLOR, thickness=D
     frame : ndarray
         The image on which to draw the line.
     
-    points : array_like
+    vertices : array_like
         The list of (x, y) coordinates connecting each segment.
     
-    closed : bool, optional
+    closed : bool, optional, default = True
         If True, the last point is joined to the first one. Set to True by default.
     
-    color : tuple, optional
+    color : tuple, optional, default = (0, 0, 255)
         The color of the line. The default color is (0, 0, 255).
     
-    thickness : int, optional
+    thickness : int, optional, default = 1
         The thickness of the line. The default thickness is 1 px.
 
     See Also
@@ -211,16 +211,16 @@ def draw_convex_hull(frame, vertices, closed=True, color=DEFAULT_COLOR, thicknes
     frame : ndarray
         The image on which to draw the line.
     
-    points : array_like
+    vertices : array_like
         The list of (x, y) coordinates connecting each segment.
     
-    closed : bool, optional
+    closed : bool, optional, default = True
         If True, the last point is joined to the first one. Set to True by default.
     
-    color : tuple, optional
+    color : tuple, optional, default = (0, 0, 255)
         The color of the line. The default color is (0, 0, 255).
     
-    thickness : int, optional
+    thickness : int, optional, default = 1
         The thickness of the line. The default thickness is 1 px.
     
     See Also
@@ -242,13 +242,13 @@ def draw_min_enclosing_rectangle(frame, vertices, color=DEFAULT_COLOR, thickness
     frame : ndarray
         The image on which to draw the rectangle.
     
-    points : array_like
+    vertices : array_like
         The list of (x, y) coordinates connecting each segment.
     
-    color : tuple, optional
+    color : tuple, optional, default = (0, 0, 255)
         The color of the rectangle. The default color is (0, 0, 255).
     
-    thickness : int, optional
+    thickness : int, optional, default = 1
         The thickness of the rectangle. The default thickness is 1 px.
     
     Returns
@@ -258,33 +258,5 @@ def draw_min_enclosing_rectangle(frame, vertices, color=DEFAULT_COLOR, thickness
     rectangle = geometry.get_min_enclosing_rectangle(vertices)
     cv2.rectangle(frame, rectangle[0], rectangle[1], color, thickness)
     return rectangle
-    
-
-# ------------------------------
-# EXAMPLE USAGE
-# ------------------------------
-if __name__ == '__main__':
-
-    frame = np.zeros((500, 500, 3), dtype=np.uint8)
-
-    vertices = []
-    for i in range(100):
-        start, end = 100, 400
-
-        x = np.random.randint(start, end)
-        y = np.random.randint(start, end)
-
-        vertices.append((x, y))
-
-    draw_all_crosses(frame, vertices, color=(255,255,255), length=5)
-    draw_polygon(frame, vertices, color=(255, 0,0))
-    draw_min_enclosing_rectangle(frame, vertices, color=(0, 0, 255))
-    draw_convex_hull(frame, vertices, color=(0, 255, 0))
-
-    while True:
-        cv2.imshow('frame', frame)
-
-        if cv2.waitKey(1) == ord('q'):  
-            break
 
     
