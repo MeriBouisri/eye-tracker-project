@@ -4,6 +4,9 @@ from utility.draw_utils import *
 from utility.geometry_utils import *
 
 from face_mesh import FaceMesh
+from landmark_vector import LandmarkVector
+from stable_face_mesh import StableFaceMesh
+from landmark_constants import *
 
 class FaceFrame:
     """
@@ -16,26 +19,21 @@ class FaceFrame:
 
     face_mesh : FaceMesh
         The FaceMesh instance used to detect the landmarks.
-
-    Constants
-    ----------
-    PUPIL_CENTER_KEYPOINTS : list[int] = [468, 473]
-    EYE_OUTER_CORNER_KEYPOINTS : list[int] = [33, 263]
-    FACE_CENTER_KEYPOINTS : list[int] = [197, 8]
     """
 
-    PUPIL_CENTER_KEYPOINTS = [468, 473]
-    EYE_OUTER_CORNER_KEYPOINTS = [33, 263]
-    FACE_CENTER_KEYPOINTS = [197, 8]
-
-    IRIS_KEYPOINTS = [[474, 475, 476, 477], 
-                      [469, 470, 471, 472]]
 
     def __init__(self, face_mesh: FaceMesh = FaceMesh()):
         self.face_mesh = face_mesh
+        self.stable_mesh = StableFaceMesh()
 
         self.frame: np.ndarray = None
         self.frame_dimensions = None
+
+        self.horizontal_vector = LandmarkVector(self.face_mesh)
+        self.horizontal_vector.set_landmark_keypoints(*EYE_OUTER_CORNER_KEYPOINTS)
+
+        self.vertical_vector = LandmarkVector(self.face_mesh)
+        self.vertical_vector.set_landmark_keypoints(*FACE_CENTER_KEYPOINTS)
 
     def update_frame(self, frame):
         """
@@ -56,6 +54,49 @@ class FaceFrame:
         self.frame_dimensions = np.array([self.frame.shape[0], self.frame.shape[1]])
         self.face_mesh.apply_face_mesh(frame)
 
+    def get_scale_factor(self):
+        frame_surface_area = self.frame.shape[0] * self.frame.shape[1]
+        face_surface_area = self.get_min_area_rectangle()
+
+        return face_surface_area / frame_surface_area
+    
+    def get_rotation_angle(self):
+        return self.horizontal_vector.get_angle_degrees()
+    
+    def get_horizontal_vector(self):
+        """
+        Returns
+        ----------
+        horizontal_vector : tuple[float, float]
+            The (magnitude, angle) of the horizontal vector.
+        """
+        return self.horizontal_vector.get_geometric_vector()
+    
+    def get_vertical_vector(self):
+        """
+        Returns
+        ----------
+        vertical_vector : tuple[float, float]
+            The (magnitude, angle) of the vertical vector.
+        """
+        return self.vertical_vector.get_geometric_vector()
+    
+    def get_stable_mesh(self):
+        """
+        Apply necessary transformations to this instance's face mesh.
+
+        Returns
+        ----------
+        stable_mesh : StableFaceMesh
+            A stable_face_mesh instance
+        """
+        center_vector = self.horizontal_vector.get_center_coordinates()
+        landmarks = self.face_mesh.get_scaled_landmarks() - center_vector
+        rotation = self.get_rotation_angle()
+        rotated_landmarks = rotate_points(landmarks, math.radians(rotation)) + center_vector
+
+        self.stable_mesh.update_mesh(rotated_landmarks)
+    
     def get_pupil_center_landmarks(self, scale_to_frame=True):
         """
         Get the (x, y) coordinates of the pupil center landmarks.
@@ -74,7 +115,7 @@ class FaceFrame:
         pupil_center_landmarks : ndarray
             The (x, y) coordinates of the pupil center landmarks.
         """
-        return self.face_mesh.get_landmarks(self.PUPIL_CENTER_KEYPOINTS, scale_to_frame=scale_to_frame)
+        return self.face_mesh.get_landmarks(PUPIL_CENTER_KEYPOINTS, scale_to_frame=scale_to_frame)
     
     def get_eye_outer_corner_landmarks(self, scale_to_frame=True):
         """
@@ -94,7 +135,7 @@ class FaceFrame:
         eye_outer_corner_landmarks : ndarray
             The (x, y) coordinates of the eye outer corner landmarks.
         """
-        return self.face_mesh.get_landmarks(self.EYE_OUTER_CORNER_KEYPOINTS, scale_to_frame=scale_to_frame)
+        return self.face_mesh.get_landmarks(EYE_OUTER_CORNER_KEYPOINTS, scale_to_frame=scale_to_frame)
     
     def get_face_center_landmarks(self, scale_to_frame=True):
         """
@@ -114,9 +155,14 @@ class FaceFrame:
         face_center_landmarks : ndarray
             The (x, y) coordinates of the face center landmarks.
         """
-        return self.face_mesh.get_landmarks(self.FACE_CENTER_KEYPOINTS, scale_to_frame=scale_to_frame)
+        return self.face_mesh.get_landmarks(FACE_CENTER_KEYPOINTS, scale_to_frame=scale_to_frame)
     
-    def get_face_convex_hull(self, scale_to_frame=True):
+    def get_iris_landmarks(self, scale_to_frame=True):
+        left_iris = self.face_mesh.get_landmarks(IRIS_KEYPOINTS[0], scale_to_frame=scale_to_frame)
+        right_iris = self.face_mesh.get_landmarks(IRIS_KEYPOINTS[1], scale_to_frame=scale_to_frame)
+        return left_iris, right_iris
+    
+    def get_convex_hull(self, scale_to_frame=True):
         """
         Get the vertices of the convex non-self-intersecting polygon that encloses the face mesh.
 
@@ -131,6 +177,14 @@ class FaceFrame:
             The vertices of the convex non-self-intersecting polygon that encloses the face mesh.
         """
         return get_convex_hull(self.face_mesh.get_landmarks(scale_to_frame=scale_to_frame))
+    
+    def get_min_area_rectangle(self):
+        face_landmarks = self.get_convex_hull(scale_to_frame=False)
+        normalized_rotated_landmarks = rotate_points(face_landmarks, self.horizontal_vector.get_angle_degrees())
+        scaled_rotated_landmarks = normalized_rotated_landmarks * self.face_mesh.frame_dimensions
+        min_area_rectangle = get_min_enclosing_rectangle(scaled_rotated_landmarks)
+
+        return get_rectangular_area(min_area_rectangle)
     
     def rotate_frame(self, angle, rotation_axis=None, scale=1):
         return self.rotate_frame(self.frame, angle, rotation_axis, scale)
