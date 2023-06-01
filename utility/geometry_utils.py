@@ -86,15 +86,30 @@ def get_rectangular_area(vertices):
     Returns the area of the minimal rectangle enclosing the given vertices.
     """
 
-    (x1, y1), (x2, y2) = get_min_enclosing_rectangle(vertices)
-    return abs(x1 - x2) * abs(y1 - y2)
+    width, height = get_rectangular_dimensions(vertices)
+    return width * height
 
-def get_rectangular_vertices(points):
+def get_rectangular_vertices(vertices):
     """
     Returns the four vertices of the minimal rectangle enclosing the given points.
     """
-    (x1, y1), (x2, y2) = get_min_enclosing_rectangle(points)
+    (x1, y1), (x2, y2) = get_min_enclosing_rectangle(vertices)
     return (x1, y1), (x1, y2), (x2, y2), (x2, y1)
+
+def get_rectangular_dimensions(vertices):
+    """
+    Returns the dimensions of the minimal rectangle enclosing the given vertices.
+    """
+    (x1, y1), (x2, y2) = get_min_enclosing_rectangle(vertices)
+    return abs(x1 - x2), abs(y1 - y2)
+
+def resize_dimensions(original_dimensions, resize_factor):
+    ratio = original_dimensions[0] / original_dimensions[1]
+
+    new_height = int(original_dimensions[0] * resize_factor)
+    new_width = int(new_height * ratio)
+
+    return new_height, new_width
 
 def calculate_angle_degrees(point1, point2):
     """
