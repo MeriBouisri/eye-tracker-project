@@ -15,7 +15,7 @@ class LandmarkVector:
         The FaceMesh instance used to retrieve the landmark coordinates.
     """
 
-    def __init__(self, face_mesh: FaceMesh):
+    def __init__(self, face_mesh):
         """
         Parameters
         ----------
