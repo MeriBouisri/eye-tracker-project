@@ -126,6 +126,12 @@ def rotate_points(points, angle):
     
     return np.dot(points, rotation_matrix)
 
+def translate_points(points, translation_vector):
+    """
+    Translate every coordinate in the given list of points by the given translation vector.
+    """
+    return points + translation_vector
+
 
 def calculate_magnitude(point1, point2):
     """
