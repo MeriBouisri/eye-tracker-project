@@ -58,7 +58,7 @@ class FaceMesh():
             raise FaceNotFound('Face not found in frame')
 
 
-    def get_normalized_landmarks(self, keypoints=range(KEYPOINT_COUNT), keep_dimensions=False):
+    def get_normalized_landmarks(self, keypoints=None, keep_dimensions=False):
         """
         Returns the normalized value of (x, y) coordinates of the face mesh landmark at the given keypoints.
         If no keypoints are given, returns (x, y) coordinates of all the landmarks in the face mesh.
@@ -100,6 +100,9 @@ class FaceMesh():
 
         landmarks = self.landmark_points[0].landmark
 
+        if keypoints is None:
+            keypoints = range(self.KEYPOINT_COUNT)
+
         keypoints = np.array(keypoints)
         original_shape = keypoints.shape
 
@@ -118,8 +121,7 @@ class FaceMesh():
         
         return coordinates
     
-
-    def get_scaled_landmarks(self, keypoints=range(KEYPOINT_COUNT), keep_dimensions=False):
+    def get_scaled_landmarks(self, keypoints=None, keep_dimensions=False):
         """
         Return a list of the (x, y) coordinates of the face mesh landmarks at the given keypoints.
         The coordinates are scaled to this instance's frame dimensions.
@@ -203,6 +205,9 @@ if __name__ == '__main__':
 
             mean = mesh.mean_landmark_coordinates(IRIS_LANDMARKS, axis=1, scale_to_frame=True)
             norm_mean = mesh.mean_landmark_coordinates(IRIS_LANDMARKS, axis=1)
+
+            pupil = mesh.get_scaled_landmarks(PUPIL_LANDMARKS)
+
 
             m = mesh.get_scaled_landmarks(IRIS_LANDMARKS)
 
