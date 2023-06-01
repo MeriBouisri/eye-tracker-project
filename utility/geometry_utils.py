@@ -79,12 +79,37 @@ def get_min_enclosing_rectangle(vertices, dtype=int):
     y_max = dtype(max(vertices, key=lambda y: y[1])[1])
 
     return (x_min, y_min), (x_max, y_max)
+        
+
+def get_rectangular_area(vertices):
+    """
+    Returns the area of the minimal rectangle enclosing the given vertices.
+    """
+
+    (x1, y1), (x2, y2) = get_min_enclosing_rectangle(vertices)
+    return abs(x1 - x2) * abs(y1 - y2)
+
+def get_rectangular_vertices(points):
+    """
+    Returns the four vertices of the minimal rectangle enclosing the given points.
+    """
+    (x1, y1), (x2, y2) = get_min_enclosing_rectangle(points)
+    return (x1, y1), (x1, y2), (x2, y2), (x2, y1)
 
 def calculate_angle_degrees(point1, point2):
     """
     Returns angle (in degrees) of the vector intersecting the two points.
     """
     return np.arctan(calculate_slope(point1, point2)) * 180 / np.pi
+
+def rotate_points(points, angle):
+    """
+    Rotate every coordinate in the given list of points by the given angle (in radians).
+    """
+    rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],
+                                [np.sin(angle), np.cos(angle)]])
+    
+    return np.dot(points, rotation_matrix)
 
 
 def calculate_magnitude(point1, point2):
