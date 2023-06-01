@@ -27,7 +27,7 @@ class StableFaceMesh():
     def get_landmarks(self, keypoints=None, scale_to_frame=True):
         if scale_to_frame:
             return self.get_scaled_landmarks(keypoints)
-        return np.take(self.stable_mesh, keypoints, axis=0)
+        return self.get_normalized_landmarks(keypoints)
     
     def get_scaled_landmarks(self, keypoints=None):
         if keypoints is None:
@@ -35,7 +35,13 @@ class StableFaceMesh():
         return np.take(self.stable_mesh, keypoints, axis=0)
     
     def get_normalized_landmarks(self, keypoints=None):
-        pass
+        # TODO: Implement this method
+        return self.get_scaled_landmarks(keypoints)
+    
+    def mean_landmark_coordinates(self, keypoints=None, scale_to_frame=True, axis=0):
+        return np.mean(self.get_landmarks(keypoints, scale_to_frame=scale_to_frame), axis=axis)
+    
+
 
 
     
