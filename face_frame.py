@@ -54,15 +54,10 @@ class FaceFrame:
         self.frame_dimensions = np.array([self.frame.shape[0], self.frame.shape[1]])
         self.face_mesh.apply_face_mesh(frame)
 
-    def get_scale_factor(self):
-        frame_surface_area = self.frame.shape[0] * self.frame.shape[1]
-        face_surface_area = self.get_min_area_rectangle()
+    # ======================
+    # STABILISATION METHODS
+    # ======================
 
-        return face_surface_area / frame_surface_area
-    
-    def get_rotation_angle(self):
-        return self.horizontal_vector.get_angle_degrees()
-    
     def get_horizontal_vector(self):
         """
         Returns
@@ -81,6 +76,15 @@ class FaceFrame:
         """
         return self.vertical_vector.get_geometric_vector()
     
+    def get_scale_factor(self):
+        frame_surface_area = self.frame.shape[0] * self.frame.shape[1]
+        face_surface_area = self.get_min_area_rectangle()
+
+        return face_surface_area / frame_surface_area
+    
+    def get_rotation_angle(self):
+        return self.horizontal_vector.get_angle_degrees()
+    
     def get_stable_mesh(self):
         """
         Apply necessary transformations to this instance's face mesh.
@@ -91,11 +95,62 @@ class FaceFrame:
             A stable_face_mesh instance
         """
         center_vector = self.horizontal_vector.get_center_coordinates()
+
+        # Rotate the face mesh around the center of the horizontal vector
         landmarks = self.face_mesh.get_scaled_landmarks() - center_vector
         rotation = self.get_rotation_angle()
-        rotated_landmarks = rotate_points(landmarks, math.radians(rotation)) + center_vector
+        rotated_landmarks = rotate_points(landmarks, math.radians(rotation)) 
 
-        self.stable_mesh.update_mesh(rotated_landmarks)
+        translated_landmarks = self.translate_to_center(rotated_landmarks) + center_vector
+
+        # Map coordinates to origin (0, 0) and scale to frame dimensions
+        self.stable_mesh.update_mesh(translated_landmarks)
+
+    def translate_to_center(self, landmarks):
+        center_vector_x, center_vector_y = self.horizontal_vector.get_center_coordinates()
+        center_frame_x = self.frame.shape[1] // 2
+        center_frame_y = self.frame.shape[0] // 2
+
+        dx = center_frame_x - center_vector_x
+        dy = center_frame_y - center_vector_y
+
+        for landmark in landmarks:
+            landmark[0] += dx
+            landmark[1] += dy
+
+        return landmarks
+
+
+    # ======================
+    # FACE AREA METHODS
+    # ======================
+
+    def get_face_rectangle(self):
+        """
+        Returns
+        ----------
+        face_rectangle : ndarray
+            The vertices of the minimal rectangle that encloses the face mesh. It may be rotated.
+        """
+        face_area_convex_hull = self.get_convex_hull(scale_to_frame=False)
+        return get_rectangular_vertices(face_area_convex_hull)
+    
+    def get_eye_zone_rectangle(self):
+        """
+        Returns
+        ----------
+        eye_zone_rectangle : ndarray
+            The vertices of the minimal rectangle that encloses the eye zone. It may be rotated.
+        """
+        # We will use several keypoints in order to create a convex hull that encloses the eye zone as much as we want
+        eye_area_keypoints = EYE_AREA_KEYPOINTS
+        eye_area_convex_hull = get_convex_hull(self.face_mesh.get_landmarks(eye_area_keypoints))
+
+        return get_rectangular_vertices(eye_area_convex_hull)
+
+    # ======================
+    # LANDMARK METHODS
+    # ======================
     
     def get_pupil_center_landmarks(self, scale_to_frame=True):
         """
@@ -161,6 +216,10 @@ class FaceFrame:
         left_iris = self.face_mesh.get_landmarks(IRIS_KEYPOINTS[0], scale_to_frame=scale_to_frame)
         right_iris = self.face_mesh.get_landmarks(IRIS_KEYPOINTS[1], scale_to_frame=scale_to_frame)
         return left_iris, right_iris
+    
+    # ======================
+    # GEOMETRIC METHODS
+    # ======================
     
     def get_convex_hull(self, scale_to_frame=True):
         """
