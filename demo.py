@@ -24,6 +24,7 @@ face_frame = FaceFrame()
 # Dont forget to bind the stable frame to the necessary face frame
 stable_frame = StableFaceFrame(face_frame)
 
+
 while True:
     # Read the frame from the camera
     _, frame = cam.read()
@@ -31,6 +32,7 @@ while True:
 
     # Create a blank frame to draw on
     blank = np.zeros((frame.shape), dtype=np.uint8)
+    drawing_frame = np.zeros((frame.shape), dtype=np.uint8)
 
     try:
         # 
@@ -44,9 +46,13 @@ while True:
         # We can distinguish between stable landmarks (after stabilization) and raw landmarks (before)
         stable_pupil_landmarks = stable_frame.get_pupil_center_landmarks()
         raw_pupil_landmarks = stable_frame.parent_frame.get_pupil_center_landmarks()
+        mean_pupils = stable_frame.face_mesh.mean_landmark_coordinates(PUPIL_CENTER_KEYPOINTS, scale_to_frame=True)
+
 
         # Or you can access them directly through the face mesh instance
         stable_eye_zone_landmarks = stable_frame.face_mesh.get_landmarks(EYE_AREA_KEYPOINTS)
+
+
         
         # You can also extract data about the movement of the stable frame
         stable_h_vector = stable_frame.horizontal_vector
@@ -64,16 +70,18 @@ while True:
         face_rectangle = stable_frame.get_face_rectangle()
         eye_rectangle = stable_frame.get_eye_zone_rectangle()
 
+        red = (0, 0, 255)
+        green = (0, 255, 0)
+        blue = (255, 0, 0)
         # Now, let's start drawing and displaying the info we have so far 
-        cv2.putText(blank, f'left pupil coordinates (raw) : {raw_pupil_landmarks[0]}', (0, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
-        cv2.putText(blank, f'right pupil coordinates (raw) : {raw_pupil_landmarks[1]}', (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
-        cv2.putText(blank, f'left pupil coordinates (stable) : {stable_pupil_landmarks[0]}', (0, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
-        cv2.putText(blank, f'right pupil coordinates (stable) : {stable_pupil_landmarks[1]}', (0, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
+        cv2.putText(blank, f'left pupil coordinates (raw) : {raw_pupil_landmarks[0]}', (0, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, red)
+        cv2.putText(blank, f'right pupil coordinates (raw) : {raw_pupil_landmarks[1]}', (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, red)
+        cv2.putText(blank, f'left pupil coordinates (stable) : {stable_pupil_landmarks[0]}', (0, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, green)
+        cv2.putText(blank, f'right pupil coordinates (stable) : {stable_pupil_landmarks[1]}', (0, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, green)
         
         cv2.putText(blank, f'Horizontal rotation: {parent_h_vector[1]}', (0, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
         cv2.putText(blank, f'Horizontal magnitude : {parent_h_vector[0]}', (0, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
         cv2.putText(blank, f'Scale factor : {stable_frame.parent_frame.get_scale_factor()}', (0, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
-        
 
         # We can draw other stuff on the frame with the data we have, for visualization purposes
         draw_all_crosses(blank, stable_pupil_landmarks, color=(0, 0, 255), length=5)
@@ -86,8 +94,8 @@ while True:
         left_iris = cv2.fitEllipse(stable_iris_landmarks[0])
         right_iris = cv2.fitEllipse(stable_iris_landmarks[1])
 
-        cv2.ellipse(blank, left_iris, (255, 255, 255), 1)
-        cv2.ellipse(blank, right_iris, (255, 255, 255), 1)
+        cv2.ellipse(blank, left_iris, (255, 255, 0), 1)
+        cv2.ellipse(blank, right_iris, (255, 255, 0), 1)
 
         # Draw the polygons and rectangles on the frame of your choice
         draw_polygon(blank, face_convex_hull, color=(255, 255, 255))
@@ -96,13 +104,27 @@ while True:
         draw_polygon(blank, eye_rectangle, color=(0, 0, 255))
 
         draw_convex_hull(blank, stable_landmarks, color=(255, 255, 255))
-        draw_convex_hull(blank, stable_frame.face_mesh.get_landmarks(EYE_AREA_KEYPOINTS), color=(255, 255, 255))
+        draw_convex_hull(blank, stable_frame.face_mesh.get_landmarks(EYE_AREA_KEYPOINTS), color=blue)
         draw_all_crosses(blank, stable_frame.get_pupil_center_landmarks(), color=(0, 0, 255))
+
+        draw_cross(drawing_frame, mean_pupils, color=(255, 255, 255), length=5)
+        IMPORTANT_KEYPOINTS = IRIS_KEYPOINTS[0] + IRIS_KEYPOINTS[1] + PUPIL_CENTER_KEYPOINTS + EYE_OUTER_CORNER_KEYPOINTS + FACE_CENTER_KEYPOINTS
+        important_landmarks = stable_frame.face_mesh.get_landmarks(IMPORTANT_KEYPOINTS)
+
+
+
+        draw_all_crosses(frame, stable_frame.parent_frame.face_mesh.get_landmarks())
+
+
+
+
 
     except FaceNotFound:
             pass
 
     cv2.imshow('frame', blank)
+    cv2.imshow("parent_frame", frame)
+   
 
     if cv2.waitKey(1) == ord('q'):
             break
