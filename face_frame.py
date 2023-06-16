@@ -3,6 +3,9 @@ from utils import image_utils
 
 from face_mesh import RawFaceMesh
 
+class FrameDimensionError(Exception):
+    pass
+
 class FaceFrame:
     """
     A FaceFrame object is a frame that can be processed by the FaceMesh class, and then transformed accordingly.
@@ -71,6 +74,7 @@ class FaceFrame:
         """
         eye_roi = self.face_mesh.get_eye_roi(eye_id)
         return self.crop_frame(*eye_roi)
+ 
     
     def get_iris_frame(self, eye_id):
         """
@@ -154,9 +158,10 @@ class FaceFrame:
 
         Returns
         ----------
-        cropped_frame : ndarray
+        cropped_frame : ndarray | None
             The section of the input frame cropped to the area enclosed inside the rectangle defined by the upper left and lower right corners.
             The output frame is not a copy of the input frame, such as any changes made to the output frame will also affect the input frame.
+            Returns None if the frame's dimensions are invalid or the frame is empty.
 
         Notes
         ----------
@@ -168,7 +173,17 @@ class FaceFrame:
         image_utils.crop_frame :
             The static version of this method. See for more information about the implementation.
         """
-        return image_utils.crop_frame(self.frame, upper_left_corner, lower_right_corner)
+        cropped_frame = image_utils.crop_frame(self.frame, upper_left_corner, lower_right_corner)
+
+        if cropped_frame.shape[0] < 0 or cropped_frame.shape[1] < 0:
+            return None
+        
+        elif cropped_frame.size == 0:
+            return None
+        
+        return cropped_frame
+
+
 
 
     
