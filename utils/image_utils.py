@@ -1,7 +1,9 @@
 import numpy as np
 import cv2
 
+
 # ========== IMAGE PROCESSING FUNCTIONS ========== #
+
 
 def apply_single_scale_retinex(image, sigma, ksize = 0):
     """
@@ -40,6 +42,9 @@ def apply_single_scale_retinex(image, sigma, ksize = 0):
 
 # ========== FORM TRANSFORMATION FUNCTIONS ========== #
 
+
+
+
 def crop_frame(frame, upper_left_corner, lower_right_corner):
     """
     Crop the frame to the area enclosed within the upper left and lower right corners of a rectangle.
@@ -77,8 +82,11 @@ def crop_frame(frame, upper_left_corner, lower_right_corner):
     min_height, min_width = 0, 0
     max_height, max_width, _ = frame.shape
 
-    min_column, min_row = np.clip(upper_left_corner, min_height, max_height)
-    max_column, max_row = np.clip(lower_right_corner, min_width, max_width)
+    min_column = np.clip(upper_left_corner[0], min_width, max_width)
+    max_column = np.clip(lower_right_corner[0], min_width, max_width)
+
+    min_row = np.clip(upper_left_corner[1], min_height, max_height)
+    max_row = np.clip(lower_right_corner[1], min_height, max_height)
 
     return frame[min_row:max_row, min_column:max_column]
 
