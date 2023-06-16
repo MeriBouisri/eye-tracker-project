@@ -1,5 +1,4 @@
 from enum import Enum
-
 from utils.nested_dict import NestedDict
 
 # ========== EYE KEYPOINTS ==========
@@ -9,8 +8,8 @@ RIGHT_EYE_KEYPOINTS = [263, 362, 373, 374, 380, 381, 382, 362, 398, 384, 385, 38
 
 # ========== IRIS KEYPOINTS ==========
 
-LEFT_IRIS_KEYPOINTS = [468, 469, 470, 471, 472]
-RIGHT_IRIS_KEYPOINTS = [473, 474, 475, 476, 477]
+LEFT_IRIS_KEYPOINTS = [469, 470, 471, 472]
+RIGHT_IRIS_KEYPOINTS = [474, 475, 476, 477]
 
 # ========== CENTER PUPIL KEYPOINTS ==========
 
