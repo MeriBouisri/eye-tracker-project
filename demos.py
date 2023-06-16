@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
 
-from camera import Camera
+from camera import Camera, FrameDimensionError
 from face_frame import FaceFrame
 from face_mesh import RawFaceMesh, FaceNotFound
-from iris_extraction import IrisEllipse, NoIrisFound
+from iris_extraction import IrisEllipse, NoIrisFound, NoFittingEllipseFound
 from eye_keypoints import eye_dict
 
 from utils import draw_utils
@@ -16,13 +16,6 @@ def iris_ellipse_demo():
     """
     The following demo will show the iris ellipse fitting algorithm.
     Call this function in main.py to run the demo.
-
-    Notes
-    ----------
-    There is an issue with the ellipse fitting for the right eye. The ellipse often extends way beyond the
-    iris region, even though the region should be confined to the iris landmarks. This does not seem to happen
-    with the left eye.
-    I haven't looked into it yet, but I will soon.
     """
     cam = Camera(0)
     face_frame = FaceFrame()
@@ -37,30 +30,42 @@ def iris_ellipse_demo():
             left_eye_frame = face_frame.get_iris_frame(0)
             right_eye_frame = face_frame.get_iris_frame(1)
 
-            left_iris_ellipse, _ = iris_ellipse.fit_ellipse_to_iris(0)
-            right_iris_ellipse, _ = iris_ellipse.fit_ellipse_to_iris(1)
+            try:
 
-            cv2.ellipse(left_eye_frame, left_iris_ellipse, (0, 255, 0), 1)
-            cv2.ellipse(right_eye_frame, right_iris_ellipse, (0, 255, 0), 1)
+                left_iris_ellipse, _ = iris_ellipse.fit_ellipse_to_iris(0)
+                left_iris_center = left_iris_ellipse[0]
+                left_iris_landmarks = face_frame.face_mesh.get_landmarks(eye_dict.left.iris)
 
-            left_iris_center = left_iris_ellipse[0]
-            right_iris_center = right_iris_ellipse[0]
+                cv2.ellipse(left_eye_frame, left_iris_ellipse, (0, 255, 0), 1)
+                draw_utils.draw_cross(left_eye_frame, left_iris_center, length=5)
+                draw_utils.draw_all_crosses(frame, left_iris_landmarks, (0, 255, 0))
 
-            draw_utils.draw_cross(left_eye_frame, left_iris_center, length=5)
-            draw_utils.draw_cross(right_eye_frame, right_iris_center, length=5)
+            except NoIrisFound:
+                pass
 
-            left_iris_landmarks = face_frame.face_mesh.get_landmarks(eye_dict.left.iris)
-            right_iris_landmarks = face_frame.face_mesh.get_landmarks(eye_dict.right.iris)
+            except NoFittingEllipseFound:
+                pass
 
-            draw_utils.draw_all_crosses(frame, left_iris_landmarks, (0, 255, 0))
-            draw_utils.draw_all_crosses(frame, right_iris_landmarks, (0, 255, 0))
+            try:
 
-            cv2.imshow('frame', frame) 
+                right_iris_ellipse, _ = iris_ellipse.fit_ellipse_to_iris(1)
+                right_iris_center = right_iris_ellipse[0]
+                right_iris_landmarks = face_frame.face_mesh.get_landmarks(eye_dict.right.iris)
+                
+                cv2.ellipse(right_eye_frame, right_iris_ellipse, (0, 255, 0), 1)
+                draw_utils.draw_cross(right_eye_frame, right_iris_center, length=5)
+                draw_utils.draw_all_crosses(frame, right_iris_landmarks, (0, 255, 0))
+
+            except NoIrisFound:
+                pass
+
+            except NoFittingEllipseFound:
+                pass
+
+            
+            cv2.imshow('frame', frame)
 
         except FaceNotFound:
-            pass
-
-        except NoIrisFound:
             pass
 
         if cv2.waitKey(1) == ord('q'):
