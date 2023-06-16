@@ -1,5 +1,6 @@
 import cv2
 
+
 class Camera:
     """
     The Camera class is used to get frames from a video capture.
@@ -27,9 +28,10 @@ class Camera:
         """
         self.camera = cv2.VideoCapture(camera_id)
 
-        # TODO: I forgot what this is
         self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+
 
     def get_frame(self, flip=True):
         """
@@ -41,8 +43,14 @@ class Camera:
         Returns
         ---------- 
             The frame from the video capture.
+
+        Raises
+        ----------
+        FrameDimensionError :
+            Raised when the frame dimensions are negative.
         """
         _, self.frame = self.camera.read()
+
         if flip:
             self.frame = cv2.flip(self.frame, 1)
             
