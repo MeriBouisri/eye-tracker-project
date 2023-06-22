@@ -41,7 +41,19 @@ class FaceFrame:
 
         self.face_mesh.apply_face_mesh(frame)
 
-    def get_eye_frame(self, eye_id):
+    def get_face_roi_frame(self):
+        """
+        Returns a cropped frame containing the detected face.
+
+        Returns
+        ----------
+        face_frame : ndarray
+            The frame containing the detected face.
+        """
+        face_roi = self.face_mesh.get_face_roi()
+        return self.crop_frame(*face_roi)
+
+    def get_eye_roi_frame(self, eye_id):
         """
         Returns the frame of the eye specified by the eye_id parameter.
 
@@ -73,7 +85,7 @@ class FaceFrame:
         return self.crop_frame(*eye_roi)
  
     
-    def get_iris_frame(self, eye_id):
+    def get_iris_roi_frame(self, eye_id):
         """
         Returns the frame of the iris specified by the eye_id parameter.
 
