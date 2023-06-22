@@ -19,6 +19,7 @@ class Calibration(ABC):
         self._savefile = SaveFile(self._savefile_name, self._savefile_dir)
 
 
+
     @abstractmethod
     def calibrate(self):
         """
@@ -40,6 +41,9 @@ class Calibration(ABC):
         This method must iterate through the data and verify that each property is valid.
         """
         pass
+
+    def is_calibrated(self):
+        return self.get_calibration_data() is not None
         
     def save_calibration_data(self, check_savefile_already_exists=True, **kwargs):
         """
