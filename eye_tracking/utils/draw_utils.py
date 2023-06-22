@@ -132,6 +132,7 @@ def draw_equation_line(frame, domain_range, linear_equation: callable, color=DEF
         The thickness of the line. The default thickness is 1 px.
     """
 
+
     point1 = domain_range[0], linear_equation(domain_range[0])
     point2 = domain_range[1], linear_equation(domain_range[1])
 
@@ -140,6 +141,89 @@ def draw_equation_line(frame, domain_range, linear_equation: callable, color=DEF
     draw_line(frame, point1, point2, color, thickness)
 
     return point1, point2
+
+def draw_vertical_line(frame, x, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS):
+    """
+    Draw a vertical line on the frame passing through the given x coordinate.
+
+    Parameters
+    ----------
+    frame : ndarray
+        The image on which to draw the line.
+
+    x : int
+        The x coordinate of the line.
+
+    color : tuple, optional, default = (0, 0, 255)
+        The color of the line. The default color is (0, 0, 255).
+
+    thickness : int, optional, default = 1
+        The thickness of the line. The default thickness is 1 px.
+
+    See Also
+    ----------
+    draw_horizontal_line() : Draw a horizontal line passing through the given y coordinate.
+    """
+    max_y, min_y = frame.shape[0], 0
+    point1 = x, min_y
+    point2 = x, max_y
+
+    draw_line(frame, point1, point2, color, thickness)
+
+def draw_horizontal_line(frame, y, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS):
+    """
+    Draw a horizontal line on the frame passing through the given y coordinate.
+    The line is drawn from the top to the bottom of the frame.
+
+    Parameters
+    ----------
+    frame : ndarray
+        The image on which to draw the line.
+
+    y : int
+        The y coordinate of the line.
+    
+    color : tuple, optional, default = (0, 0, 255)
+        The color of the line. The default color is (0, 0, 255).
+    
+    thickness : int, optional, default = 1
+        The thickness of the line. The default thickness is 1 px.
+
+    See Also
+    ----------
+    draw_vertical_line() : Draw a vertical line passing through a point.
+    """
+    max_x, min_x = frame.shape[1], 0
+    point1 = min_x, y
+    point2 = max_x, y
+    draw_line(frame, point1, point2, color, thickness)
+
+def draw_cross_lines(frame, point, color=DEFAULT_COLOR, thickness=DEFAULT_THICKNESS):
+    """
+    Draw vertical and horizontal lines passing through the given point.
+
+    Parameters
+    ----------
+    frame : ndarray
+        The image on which to draw the line.
+
+    point : Any
+        The point through which the lines will pass.
+
+    color : tuple, optional, default = (0, 0, 255)
+        The color of the line. The default color is (0, 0, 255).
+
+    thickness : int, optional, default = 1
+        The thickness of the line. The default thickness is 1 px.
+
+    See Also
+    ----------
+    draw_vertical_line() : Draw a vertical line passing through a point.
+    draw_horizontal_line() : Draw a horizontal line passing through a point.
+    """
+    x, y = point
+    draw_vertical_line(frame, x, color, thickness)
+    draw_horizontal_line(frame, y, color, thickness)
 
 # ========== POLYGON DRAWING FUNCTIONS ========== #
 
