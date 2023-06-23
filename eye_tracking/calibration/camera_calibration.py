@@ -82,7 +82,6 @@ class CameraCalibration(Calibration):
         
         return True
 
-
     def calibrate(self):
         logger.info('Starting camera calibration.')
 
@@ -150,8 +149,8 @@ class CameraCalibration(Calibration):
                 if not error_handled_successfully:
                     break
 
-
         if successfully_saved:
+
             print('Calibration successful.')
 
         else:
