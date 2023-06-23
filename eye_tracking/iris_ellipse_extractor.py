@@ -2,19 +2,14 @@ import cv2
 import numpy as np
 
 from eye_tracking.face_frame import FaceFrame
+from eye_tracking.exceptions import NoIrisFound, NoFittingEllipseFound
 from eye_tracking.eye_keypoints import eye_dict, EyeID
 
 from eye_tracking.utils import image_utils
 from eye_tracking.utils import geometry_utils
 from eye_tracking.utils import draw_utils
 
-class NoIrisFound(Exception):
-    pass
-
-class NoFittingEllipseFound(Exception):
-    pass
-
-class IrisEllipseFitter:
+class IrisEllipseExtractor:
     """
     This class contains the necessary methods to extract the iris from a FaceFrame object and fit an ellipse to it.
     Each eye (left, right) contained in the FaceFrame should have its own associated IrisEllipseFitter object.
@@ -27,21 +22,29 @@ class IrisEllipseFitter:
     eye_id : str | int | EyeID
         The id that determines which eye to extract the iris from (left eye or right eye). 
         Can be either a string ('left', 'right'), int (0, 1), or EyeID (EyeID.LEFT, EyeID.RIGHT).
+
+    iris_ellipse :
+        The iris_ellipse is the ellipse fitted to the iris relative to the iris ROI.
+        The iris_ellipse attribute is updated at every call of the get_iris_ellipse method.
+
+    Notes
+    ----------
+    The iris_ellipse's center is relative to the iris ROI, not the associated face_frame.
+    To get the iris_ellipse's center relative to the face_frame, use the associated roi to translate back.
     """
     def __init__(self, face_frame: FaceFrame, eye_id):
         self.face_frame = face_frame
         self.eye_id = eye_id
 
-    def fit_iris_ellipse(self, relative_to_roi=True, draw_ellipse=False):
+        self.iris_ellipse = None
+
+    def get_iris_ellipse(self, relative_to_roi=False, draw_ellipse=False):
         """
         Extracts the iris from the FaceFrame object and fits an ellipse to it. This method returns the 
         ellipse in the format of openCV's ellipse function.
 
-        Returns
+        Parameters
         ----------
-        iris_ellipse : 
-            The iris_ellipse is the ellipse fitted to the iris -> ((center_x, center_y), (major_axis, minor_axis), angle).
-            The center coordinates of the ellipse are relative to the iris ROI, not the FaceFrame.
 
         relative_to_roi : bool, optional = True
             If True, the center coordinates of the ellipse will be relative to the iris ROI, not the frame associated with this instance's FaceFrame.
@@ -50,6 +53,12 @@ class IrisEllipseFitter:
 
         draw_ellipse : bool, optional = False
             If True, the iris ellipse and center will be drawn on the frame associated with this instance's FaceFrame.
+
+        Returns
+        ----------
+        iris_ellipse : 
+            The iris_ellipse is the ellipse fitted to the iris -> ((center_x, center_y), (major_axis, minor_axis), angle).
+            The center coordinates of the ellipse are relative to the iris ROI, not the FaceFrame.
 
         Raises
         ----------
@@ -69,40 +78,69 @@ class IrisEllipseFitter:
         if iris_frame is None:
             raise NoIrisFound("No iris found for eye_id : {}".format(self.eye_id))
 
-        processed_iris_frame = IrisEllipseFitter.process_iris_frame(iris_frame)
-        contour_points = IrisEllipseFitter.get_contour_points(processed_iris_frame)
+        processed_iris_frame = IrisEllipseExtractor.process_iris_frame(iris_frame)
+        contour_points = IrisEllipseExtractor.get_contour_points(processed_iris_frame)
 
         # Error checking for valid cv2.fitEllipse input
 
         if len(contour_points) < 5:
             raise NoFittingEllipseFound("No fitting ellipse found for eye_id: {}".format(self.eye_id))
         
-        iris_ellipse = cv2.fitEllipse(np.array(contour_points))
+        self.iris_ellipse = cv2.fitEllipse(np.array(contour_points))
 
-        if not IrisEllipseFitter.is_valid_ellipse(iris_ellipse):
+        if not IrisEllipseExtractor.is_valid_ellipse(self.iris_ellipse):
             raise NoFittingEllipseFound("No fitting ellipse found for eye_id: {}".format(self.eye_id))
     
         
         if draw_ellipse:
-            self.draw_iris_ellipse(iris_frame, iris_ellipse)
+            self.draw_iris_ellipse(iris_frame)
 
         if relative_to_roi:
-            return iris_ellipse
+            return self.iris_ellipse
         
         # Translate the ellipse center coordinates to the frame
-        frame_iris_center_x = iris_roi[0][0] + iris_ellipse[0][0]
-        frame_iris_center_y = iris_roi[0][1] + iris_ellipse[0][1]
+        frame_iris_center_x = iris_roi[0][0] + self.iris_ellipse[0][0]
+        frame_iris_center_y = iris_roi[0][1] + self.iris_ellipse[0][1]
         
-        iris_ellipse = ((frame_iris_center_x, frame_iris_center_y), iris_ellipse[1], iris_ellipse[2])
+        frame_iris_ellipse = ((frame_iris_center_x, frame_iris_center_y), self.iris_ellipse[1], self.iris_ellipse[2])
 
-        return iris_ellipse
+        return frame_iris_ellipse
     
-    def draw_iris_ellipse(self, iris_frame, iris_ellipse):
-        iris_ellipse_center = int(iris_ellipse[0][0]), int(iris_ellipse[0][1])
+    def draw_iris_ellipse(self, iris_frame):
+        if self.iris_ellipse is None:
+            return
+        
+        iris_ellipse_center = int(self.iris_ellipse[0][0]), int(self.iris_ellipse[0][1])
 
-        cv2.ellipse(iris_frame, iris_ellipse, (0, 255, 0))
+        cv2.ellipse(iris_frame, self.iris_ellipse, (0, 255, 0))
         draw_utils.draw_cross(iris_frame, iris_ellipse_center)
+    
+    @staticmethod
+    def is_valid_ellipse(ellipse):
+        """
+        Checks if the ellipse is valid by checking if the box points are valid.
 
+        Parameters
+        ----------
+        ellipse :
+            The ellipse to check. Must be in the following format :
+            >>> ((center_x, center_y), (major_axis, minor_axis), angle)
+
+        Returns
+        ----------
+        is_valid_ellipse :
+            True if the ellipse is valid, False otherwise. 
+
+        Notes
+        ----------
+        Attempting to draw an invalid ellipse will result in a cv2 error. 
+        """
+        ellipse_box = cv2.boxPoints(ellipse)
+        box_width = np.abs(ellipse_box[0][0] - ellipse_box[1][0])
+        box_height = np.abs(ellipse_box[0][1] - ellipse_box[1][1])
+
+        return not (box_width < 0 and box_height < 0)
+    
     @staticmethod
     def process_iris_frame(iris_frame):
         """
@@ -136,32 +174,6 @@ class IrisEllipseFitter:
         canny_transform = cv2.Canny(thresh, LOWER_CANNY_THRESH_BOUND, UPPER_THRESH_BOUND)
 
         return canny_transform
-    
-    @staticmethod
-    def is_valid_ellipse(ellipse):
-        """
-        Checks if the ellipse is valid by checking if the box points are valid.
-
-        Parameters
-        ----------
-        ellipse :
-            The ellipse to check. Must be in the following format :
-            >>> ((center_x, center_y), (major_axis, minor_axis), angle)
-
-        Returns
-        ----------
-        is_valid_ellipse :
-            True if the ellipse is valid, False otherwise. 
-
-        Notes
-        ----------
-        Attempting to draw an invalid ellipse will result in a cv2 error. 
-        """
-        ellipse_box = cv2.boxPoints(ellipse)
-        box_width = np.abs(ellipse_box[0][0] - ellipse_box[1][0])
-        box_height = np.abs(ellipse_box[0][1] - ellipse_box[1][1])
-
-        return not (box_width < 0 and box_height < 0)
                 
     @staticmethod
     def get_contour_points(frame):
