@@ -12,7 +12,7 @@ from eye_tracking.utils import image_utils
 
 """
 The following demo will show the iris ellipse fitting algorithm.
-Call this function in main.py to run the demo.
+Call this function in demo_filtre_kalman.py to run the demo.
 """
 def main():
     cam = cv2.VideoCapture(0)
