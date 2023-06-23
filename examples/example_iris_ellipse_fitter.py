@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 
 from eye_tracking.face_frame import FaceFrame
-from eye_tracking.face_mesh import FaceNotFound
-from eye_tracking.iris_ellipse_fitter import IrisEllipseFitter, NoIrisFound, NoFittingEllipseFound
+from eye_tracking.iris_ellipse_extractor import IrisEllipseExtractor
 from eye_tracking.eye_keypoints import eye_dict
+from eye_tracking.exceptions import NoFaceFound, NoIrisFound, NoFittingEllipseFound
 
 from eye_tracking.utils import draw_utils
 
@@ -17,8 +17,8 @@ def example_iris_fitting():
     face_frame = FaceFrame()
 
     # Create two instances of the IrisEllipseFitter class, one for each eye
-    left_iris = IrisEllipseFitter(face_frame, 'left')
-    right_iris = IrisEllipseFitter(face_frame, 'right')
+    left_iris = IrisEllipseExtractor(face_frame, 'left')
+    right_iris = IrisEllipseExtractor(face_frame, 'right')
 
     while True:
         _, frame = cam.read()
@@ -46,8 +46,8 @@ def example_iris_fitting():
 
                 The function throws NoIrisFound and NoFittingEllipseFound exceptions, which should be caught.
                 """
-                left_iris_ellipse = left_iris.fit_iris_ellipse(relative_to_roi=False, draw_ellipse=True)
-                right_iris_ellipse = right_iris.fit_iris_ellipse(relative_to_roi=False, draw_ellipse=True)
+                left_iris_ellipse = left_iris.get_iris_ellipse(relative_to_roi=False, draw_ellipse=True)
+                right_iris_ellipse = right_iris.get_iris_ellipse(relative_to_roi=False, draw_ellipse=True)
 
                 # Get the center coordinates of the ellipse relative to the full frame
                 left_iris_center = left_iris_ellipse[0]
@@ -76,7 +76,7 @@ def example_iris_fitting():
                 """
                 pass
 
-        except FaceNotFound:
+        except NoFaceFound:
             """
             Error handling for FaceNotFound exception thrown by the update_frame function.
             Caused by the face mesh not being able to detect a face in the frame.

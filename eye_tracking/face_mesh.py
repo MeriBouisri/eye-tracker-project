@@ -5,6 +5,7 @@ import cv2
 
 from eye_tracking.utils import geometry_utils
 from eye_tracking.eye_keypoints import eye_dict
+from eye_tracking.exceptions import NoFaceFound
 
 KEYPOINT_COUNT = 478
 
@@ -255,14 +256,14 @@ class RawFaceMesh(FaceMesh):
         landmark_points = output.multi_face_landmarks
 
         if not landmark_points:
-            raise FaceNotFound('Face not found in frame')
+            raise NoFaceFound('Face not found in frame')
         
         self.landmarks = landmark_points[0].landmark
 
     def get_normalized_landmarks(self, keypoints=None, keep_array_shape=False):
         if keypoints is None:
             keypoints = range(KEYPOINT_COUNT)
-            
+
         elif not np.iterable(keypoints):
             landmarks = self.landmarks[keypoints]
             return landmarks.x, landmarks.y
