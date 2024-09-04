@@ -78,6 +78,8 @@ class EyeDict(NestedDict):
         }
     }
 
+    supported_options = [['left', 0, EyeID.LEFT],['right', 1, EyeID.RIGHT]]
+
     def __init__(self):
         super().__init__(self.eye_keypoints)
 
